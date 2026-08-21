@@ -20,16 +20,23 @@
   --text:#11151c; --muted:#6b7280; --faint:#9aa1ab;
   --line:#e6e8ec; --line-strong:#d6d9df;
   --miss:#e5484d; --untracked:#e3e5e9;
-  --shadow:0 1px 2px rgba(16,24,40,.05), 0 6px 16px rgba(16,24,40,.05);
-  --radius:16px;
+  --shadow:0 1px 2px rgba(16,24,40,.05), 0 4px 12px rgba(16,24,40,.04);
   --tap:#00000010;
+  /* density knobs — everything that decides how tall the page wants to be
+     scales with viewport height, so the content fills a big phone without
+     ever overflowing a small one */
+  --cell:clamp(8px, 1.45vh, 15px);
+  --dot:clamp(15px, 2.7vh, 30px);
+  --mark:clamp(44px, 7vh, 62px);
+  --pad:clamp(5px, .9vh, 10px);
+  --gap:clamp(5px, 1vh, 10px);
 }
 :root[data-theme="dark"]{
   --bg:#0e1116; --card:#171b22; --card-2:#1d222b;
   --text:#e9edf3; --muted:#98a1ae; --faint:#6b7482;
   --line:#242a33; --line-strong:#323a45;
   --miss:#ff6369; --untracked:#262c35;
-  --shadow:0 1px 2px rgba(0,0,0,.4), 0 6px 18px rgba(0,0,0,.3);
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 4px 14px rgba(0,0,0,.28);
   --tap:#ffffff14;
 }
 @media (prefers-color-scheme: dark){
@@ -38,213 +45,245 @@
     --text:#e9edf3; --muted:#98a1ae; --faint:#6b7482;
     --line:#242a33; --line-strong:#323a45;
     --miss:#ff6369; --untracked:#262c35;
-    --shadow:0 1px 2px rgba(0,0,0,.4), 0 6px 18px rgba(0,0,0,.3);
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 4px 14px rgba(0,0,0,.28);
     --tap:#ffffff14;
   }
 }
 *{box-sizing:border-box}
-html,body{margin:0;padding:0}
+html{height:100%}
+
+/* The app is a fixed three-row shell: header, one scroll region, tab bar.
+   Nothing outside `main` can ever move, so there is no page scroll, no
+   rubber-banding and no address-bar reflow on iOS. */
 body{
+  position:fixed; inset:0; margin:0; padding:0;
+  display:flex; flex-direction:column;
+  overflow:hidden; overscroll-behavior:none;
   background:var(--bg); color:var(--text);
-  font:16px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font:16px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   -webkit-font-smoothing:antialiased;
   -webkit-text-size-adjust:100%;
-  overscroll-behavior-y:none;
 }
 button,input,select{font:inherit;color:inherit}
 button{background:none;border:0;padding:0;cursor:pointer;-webkit-tap-highlight-color:transparent}
 h1,h2,h3,p{margin:0}
-.wrap{max-width:560px;margin:0 auto;padding:0 16px}
+.wrap{width:100%;max-width:560px;margin:0 auto;padding:0 14px}
 
 /* ---------- header ---------- */
 header{
-  position:sticky;top:0;z-index:20;
-  background:var(--bg);
-  background:color-mix(in srgb, var(--bg) 88%, transparent);
-  -webkit-backdrop-filter:saturate(1.6) blur(12px);
-  backdrop-filter:saturate(1.6) blur(12px);
-  border-bottom:1px solid transparent;
-  padding-top:max(10px, env(safe-area-inset-top));
+  flex:none;
+  padding-top:env(safe-area-inset-top);
+  border-bottom:1px solid var(--line);
 }
-header.scrolled{border-bottom-color:var(--line)}
-.hrow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:6px 0 10px}
-.htitle h1{font-size:24px;font-weight:700;letter-spacing:-.02em}
-.htitle p{font-size:13px;color:var(--muted);margin-top:1px}
+.hrow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 0 9px}
+.htitle h1{font-size:21px;font-weight:700;letter-spacing:-.02em;line-height:1.15}
+.htitle p{font-size:12px;color:var(--muted);margin-top:1px;line-height:1.25}
 .icon-btn{
-  width:38px;height:38px;border-radius:12px;display:grid;place-items:center;
-  background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow);color:var(--muted);
+  width:34px;height:34px;flex:none;border-radius:11px;display:grid;place-items:center;
+  background:var(--card);border:1px solid var(--line);color:var(--muted);
 }
 .icon-btn:active{background:var(--card-2)}
-.icon-btn svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.icon-btn svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 
-/* ---------- layout ---------- */
-main{padding:8px 0 calc(88px + env(safe-area-inset-bottom))}
+/* ---------- the one scroll region ---------- */
+main.wrap{
+  flex:1; min-height:0;
+  overflow-y:auto; overscroll-behavior:contain; -webkit-overflow-scrolling:touch;
+  padding:var(--gap) 14px;
+  align-self:center;
+}
+.view{min-height:100%;display:flex;flex-direction:column}
 .view[hidden]{display:none}
-.stack{display:flex;flex-direction:column;gap:12px}
+.stack{flex:1;display:flex;flex-direction:column;gap:var(--gap)}
+#v-today .stack,#v-insights .stack{justify-content:center}
+
+/* Fewer habits, bigger everything — the column fills the viewport either way. */
+.stack[data-n="1"]{--dot:clamp(30px,7vh,56px);--mark:clamp(66px,12vh,100px)}
+.stack[data-n="2"]{--dot:clamp(26px,5.4vh,46px);--mark:clamp(58px,9.5vh,84px)}
+.stack[data-n="3"]{--dot:clamp(22px,4.2vh,38px);--mark:clamp(52px,8vh,72px)}
+#v-insights .stack[data-n="1"] .isect{max-height:min(40vh,300px);--cell:clamp(16px,3.4vh,30px)}
+#v-insights .stack[data-n="2"] .isect{max-height:min(30vh,230px);--cell:clamp(13px,2.7vh,24px)}
+#v-insights .stack[data-n="3"] .isect{max-height:min(24vh,190px);--cell:clamp(11px,2.2vh,19px)}
 
 /* ---------- today ---------- */
 .banner{
-  background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
-  padding:14px 16px;box-shadow:var(--shadow);
+  flex:none;background:var(--card);border:1px solid var(--line);border-radius:13px;
+  padding:calc(var(--pad) + 2px) 12px;box-shadow:var(--shadow);
 }
-.banner b{display:block;font-size:15px;margin-bottom:2px}
-.banner span{font-size:13.5px;color:var(--muted)}
-.banner.tip{display:flex;gap:12px;align-items:flex-start}
-.banner.tip .x{margin-left:auto;color:var(--faint);font-size:20px;line-height:1;padding:2px 4px}
+.banner b{display:block;font-size:13.5px;font-weight:650;letter-spacing:-.01em}
+.banner span{font-size:12px;color:var(--muted);display:block;line-height:1.35}
+.banner.tip{display:flex;gap:10px;align-items:flex-start}
+.banner.tip .x{margin-left:auto;color:var(--faint);font-size:19px;line-height:1;padding:0 2px}
 
 .card{
-  background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
-  box-shadow:var(--shadow);padding:14px 14px 12px;
-  display:flex;gap:14px;align-items:flex-start;
+  flex:0 1 auto; min-height:70px; overflow:hidden;
+  background:var(--card);border:1px solid var(--line);border-radius:14px;
+  box-shadow:var(--shadow);padding:var(--pad) 11px;
+  display:flex;gap:11px;align-items:center;
 }
-.card .body{flex:1;min-width:0}
-.card .top{display:flex;align-items:center;gap:8px;min-width:0}
-.card .emoji{font-size:19px;line-height:1}
-.card h2{font-size:16.5px;font-weight:650;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.card .sub{font-size:13px;color:var(--muted);margin-top:3px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
-.card .sub .flame{color:var(--c)}
-.pill{font-size:11.5px;font-weight:600;padding:2px 7px;border-radius:99px;background:var(--card-2);border:1px solid var(--line);color:var(--muted)}
+.card .body{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:5px}
+.card .top{display:flex;align-items:center;gap:7px;min-width:0}
+.card .emoji{font-size:16px;line-height:1;flex:none}
+.card h2{flex:1;min-width:0;font-size:15px;font-weight:650;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card .flame{flex:none;font-size:12.5px;font-weight:650;color:var(--c)}
+.card .broken{flex:none;font-size:11.5px;color:var(--faint)}
 
-/* the big daily button */
 .mark{
-  flex:none;width:56px;height:56px;border-radius:50%;
-  display:grid;place-items:center;position:relative;
+  flex:none;width:var(--mark);height:var(--mark);border-radius:50%;
+  display:grid;place-items:center;
   border:2px solid var(--c);background:var(--c);color:#fff;
   transition:transform .12s ease, background .15s ease, border-color .15s ease;
 }
-.mark svg{width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+.mark svg{width:44%;height:44%;fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
 .mark:active{transform:scale(.9)}
 .mark[data-state="missed"]{background:transparent;border-color:var(--miss);color:var(--miss);border-style:dashed}
-.mark[data-state="missed"] svg{stroke-width:2.4}
 
-/* week strip */
-.week{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:10px}
+.week{display:flex;flex-direction:column;gap:3px}
+.wk-head,.wk-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.wk-head i{font-style:normal;font-size:9.5px;line-height:1.2;color:var(--faint);text-align:center}
+.wk-head i.now{color:var(--text);font-weight:700}
 .day{
-  display:flex;flex-direction:column;align-items:center;gap:4px;
-  padding:4px 0 2px;border-radius:9px;
+  width:100%;max-width:var(--dot);aspect-ratio:1;border-radius:6px;
+  justify-self:center;background:var(--untracked);
 }
-.day:active{background:var(--tap)}
-.day i{font-style:normal;font-size:10px;color:var(--faint);letter-spacing:.02em}
-.day b{
-  width:100%;max-width:26px;aspect-ratio:1;border-radius:7px;display:block;
-  background:var(--untracked);
-}
-.day[data-s="kept"] b{background:var(--c)}
-.day[data-s="miss"] b{background:transparent;border:1.5px dashed var(--miss)}
-.day[data-s="none"] b{background:var(--untracked);opacity:.55}
-.day[data-today="1"] i{color:var(--text);font-weight:700}
-.day[data-today="1"] b{outline:2px solid var(--line-strong);outline-offset:2px}
+.day[data-s="kept"]{background:var(--c)}
+.day[data-s="miss"]{background:transparent;border:1.5px dashed var(--miss)}
+.day[data-s="none"]{opacity:.5}
+.day[data-today="1"]{outline:2px solid var(--line-strong);outline-offset:2px}
 
 /* ---------- empty state ---------- */
-.empty{text-align:center;padding:34px 18px 26px;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
-.empty .big{font-size:34px}
-.empty b{display:block;margin:10px 0 4px;font-size:17px}
-.empty p{font-size:14px;color:var(--muted);max-width:34ch;margin:0 auto}
-.chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:16px}
-.chip{
-  border:1px solid var(--line);background:var(--card-2);border-radius:99px;
-  padding:8px 13px;font-size:14px;font-weight:550;
+.empty{
+  flex:1;display:flex;flex-direction:column;justify-content:center;text-align:center;
+  background:var(--card);border:1px solid var(--line);border-radius:14px;
+  box-shadow:var(--shadow);padding:20px 16px;
 }
+.empty .big{font-size:30px}
+.empty b{display:block;margin:8px 0 3px;font-size:16px}
+.empty p{font-size:13px;color:var(--muted);max-width:32ch;margin:0 auto}
+.chips{display:flex;flex-wrap:wrap;gap:7px;justify-content:center;margin-top:14px}
+.chip{border:1px solid var(--line);background:var(--card-2);border-radius:99px;padding:7px 12px;font-size:13.5px;font-weight:550}
 .chip:active{background:var(--tap)}
 
 /* ---------- insights ---------- */
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.stat{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:13px 14px;box-shadow:var(--shadow)}
-.stat .k{font-size:12px;color:var(--muted);letter-spacing:.01em}
-.stat .v{font-size:27px;font-weight:700;letter-spacing:-.03em;margin-top:2px;line-height:1.1}
-.stat .v small{font-size:14px;font-weight:600;color:var(--muted);letter-spacing:0}
-.stat .n{font-size:12px;color:var(--faint);margin-top:2px}
+.summary{
+  flex:none;display:grid;grid-template-columns:repeat(4,1fr);
+  background:var(--card);border:1px solid var(--line);border-radius:13px;
+  box-shadow:var(--shadow);padding:calc(var(--pad) + 1px) 4px;
+}
+.summary div{text-align:center;padding:0 2px;border-left:1px solid var(--line)}
+.summary div:first-child{border-left:0}
+.summary b{display:block;font-size:19px;font-weight:700;letter-spacing:-.03em;line-height:1.15}
+.summary span{display:block;font-size:9.5px;color:var(--muted);line-height:1.25;margin-top:1px}
 
-.sect{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:14px;box-shadow:var(--shadow)}
-.sect > .head{display:flex;align-items:center;gap:8px;margin-bottom:12px}
-.sect > .head h3{font-size:16px;font-weight:650;letter-spacing:-.01em;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.trio{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
-.trio div{background:var(--card-2);border:1px solid var(--line);border-radius:11px;padding:8px 9px}
-.trio .v{font-size:19px;font-weight:700;letter-spacing:-.02em}
-.trio .k{font-size:11px;color:var(--muted);margin-top:1px}
-.bar{height:7px;border-radius:99px;background:var(--untracked);overflow:hidden}
-.bar i{display:block;height:100%;border-radius:99px;background:var(--c)}
-.barlab{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin:9px 0 5px}
+.isect{
+  flex:1 1 auto;min-height:60px;overflow:hidden;
+  background:var(--card);border:1px solid var(--line);border-radius:13px;
+  box-shadow:var(--shadow);padding:var(--pad) 11px;
+  display:flex;gap:11px;align-items:center;
+}
+.isect .ileft{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px}
+.isect .itop{display:flex;align-items:center;gap:6px;min-width:0}
+.isect .itop h3{flex:1;min-width:0;font-size:14.5px;font-weight:650;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.isect .emoji{font-size:15px;line-height:1;flex:none}
+.inums{display:flex;gap:8px;flex-wrap:nowrap;overflow:hidden}
+.inums span{font-size:10px;color:var(--muted);white-space:nowrap}
+.inums b{font-size:13.5px;font-weight:700;letter-spacing:-.02em;color:var(--text);margin-right:2px}
+.inums span:first-child b{color:var(--c)}
 
-.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:12px}
-.cal .h{font-size:10px;color:var(--faint);text-align:center;padding-bottom:1px}
-.cal button{aspect-ratio:1;border-radius:5px;background:var(--untracked);width:100%}
-.cal button[data-s="kept"]{background:var(--c)}
-.cal button[data-s="miss"]{background:transparent;border:1.5px dashed var(--miss)}
-.cal button[data-s="none"]{opacity:.45}
-.cal button[data-today="1"]{outline:2px solid var(--line-strong);outline-offset:1.5px}
-.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:11.5px;color:var(--muted);margin-top:12px}
-.legend span{display:flex;align-items:center;gap:5px}
-.legend i{width:11px;height:11px;border-radius:3.5px;display:block}
-.note{font-size:12.5px;color:var(--muted);margin-top:10px}
+.ical{flex:none;display:grid;grid-template-columns:repeat(7,var(--cell));gap:2px}
+.ical button{width:var(--cell);height:var(--cell);border-radius:2.5px;background:var(--untracked)}
+.ical button[data-s="kept"]{background:var(--c)}
+.ical button[data-s="miss"]{background:transparent;border:1px dashed var(--miss)}
+.ical button[data-s="none"]{opacity:.4}
+.ical button[data-today="1"]{outline:1.5px solid var(--line-strong);outline-offset:1px}
+
+.legend{flex:none;display:flex;gap:11px;flex-wrap:wrap;justify-content:center;font-size:10.5px;color:var(--faint);padding-top:1px}
+.legend span{display:flex;align-items:center;gap:4px}
+.legend i{width:9px;height:9px;border-radius:3px;display:block}
 
 /* ---------- habits (manage) ---------- */
-.row{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:11px 12px}
+.row{
+  flex:none;background:var(--card);border:1px solid var(--line);border-radius:13px;
+  box-shadow:var(--shadow);padding:calc(var(--pad) + 1px) 10px;
+}
 .row .line{display:flex;align-items:center;gap:9px}
-.row .emo{width:40px;height:40px;flex:none;border-radius:11px;background:var(--card-2);border:1px solid var(--line);font-size:19px;display:grid;place-items:center}
+.emo{
+  width:36px;height:36px;flex:none;border-radius:10px;background:var(--card-2);
+  font-size:17px;display:grid;place-items:center;
+  box-shadow:inset 0 0 0 2px var(--c);
+}
 .row input[type=text]{
   flex:1;min-width:0;background:transparent;border:0;border-bottom:1px dashed var(--line-strong);
-  padding:7px 2px;font-size:15.5px;font-weight:550;
+  padding:5px 2px;font-size:15px;font-weight:550;
 }
 .row input[type=text]:focus{outline:none;border-bottom-style:solid;border-bottom-color:var(--text)}
-.del{width:36px;height:36px;flex:none;border-radius:10px;display:grid;place-items:center;color:var(--faint)}
+.del{width:34px;height:34px;flex:none;border-radius:10px;display:grid;place-items:center;color:var(--faint)}
 .del:active{background:var(--tap);color:var(--miss)}
-.del svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-.swatches{display:flex;gap:7px;margin-top:9px;padding-left:49px;flex-wrap:wrap;align-items:center}
+.del svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+
+.panel{margin-top:8px;border-top:1px solid var(--line);padding-top:8px}
+.emopick{display:grid;grid-template-columns:repeat(8,1fr);gap:5px}
+.emopick button{aspect-ratio:1;border-radius:8px;background:var(--card-2);border:1px solid var(--line);font-size:16px}
+.emopick button[aria-pressed="true"]{border-color:var(--text)}
+.swatches{display:flex;gap:8px;margin-top:8px;align-items:center}
 .sw{width:22px;height:22px;border-radius:50%;border:2px solid transparent;position:relative}
 .sw i{position:absolute;inset:2px;border-radius:50%;display:block}
 .sw[aria-pressed="true"]{border-color:var(--text)}
-.emopick{display:grid;grid-template-columns:repeat(8,1fr);gap:6px;margin-top:10px}
-.emopick button{aspect-ratio:1;border-radius:9px;background:var(--card-2);border:1px solid var(--line);font-size:18px}
-.emopick button[aria-pressed="true"]{border-color:var(--text)}
-.meta-line{font-size:12px;color:var(--faint);padding-left:49px;margin-top:6px}
+.panel .meta{font-size:11px;color:var(--faint);margin-left:auto;text-align:right;line-height:1.3}
 
-.addbox{background:var(--card);border:1px dashed var(--line-strong);border-radius:var(--radius);padding:12px}
-.addbox .line{display:flex;gap:8px}
-.addbox input{
-  flex:1;min-width:0;background:var(--card-2);border:1px solid var(--line);border-radius:11px;padding:11px 12px;font-size:15.5px;
-}
+.addbox{flex:none;background:var(--card);border:1px dashed var(--line-strong);border-radius:13px;padding:8px 10px}
+.addbox .line{display:flex;gap:8px;align-items:center}
+.addbox input{flex:1;min-width:0;background:var(--card-2);border:1px solid var(--line);border-radius:10px;padding:9px 11px;font-size:15px}
 .addbox input:focus{outline:none;border-color:var(--line-strong)}
-.btn{
-  border-radius:11px;padding:11px 15px;font-size:15px;font-weight:600;
-  background:var(--text);color:var(--bg);
-}
+.btn{border-radius:10px;padding:9px 14px;font-size:14.5px;font-weight:600;background:var(--text);color:var(--bg)}
 .btn:active{opacity:.8}
 .btn.ghost{background:var(--card);color:var(--text);border:1px solid var(--line)}
 .btn.ghost:active{background:var(--card-2)}
-.btn[disabled]{opacity:.4}
-.btnrow{display:flex;gap:8px;flex-wrap:wrap}
-.btnrow .btn{flex:1;min-width:120px;text-align:center}
-.hint{font-size:12.5px;color:var(--muted);text-align:center;padding:2px 8px 0}
+.btnrow{display:flex;gap:7px}
+.btnrow .btn{flex:1;text-align:center;padding:9px 6px;font-size:13.5px}
+.hint{flex:none;font-size:11.5px;color:var(--faint);text-align:center;line-height:1.35}
+.sect{flex:none;background:var(--card);border:1px solid var(--line);border-radius:13px;padding:calc(var(--pad) + 2px) 10px;box-shadow:var(--shadow)}
+.sect h3{font-size:13.5px;font-weight:650;margin-bottom:7px}
+.sect .note{font-size:11.5px;color:var(--muted);line-height:1.35;margin-top:7px}
 
 /* ---------- tab bar ---------- */
 nav{
-  position:fixed;left:0;right:0;bottom:0;z-index:30;
-  background:var(--bg);
-  background:color-mix(in srgb, var(--bg) 86%, transparent);
-  -webkit-backdrop-filter:saturate(1.6) blur(12px);
-  backdrop-filter:saturate(1.6) blur(12px);
-  border-top:1px solid var(--line);
+  flex:none;border-top:1px solid var(--line);
   padding-bottom:env(safe-area-inset-bottom);
 }
 nav .inner{max-width:560px;margin:0 auto;display:grid;grid-template-columns:repeat(3,1fr)}
 nav button{
-  display:flex;flex-direction:column;align-items:center;gap:3px;
-  padding:9px 0 7px;color:var(--faint);font-size:11px;font-weight:600;letter-spacing:.01em;
+  display:flex;flex-direction:column;align-items:center;gap:2px;
+  padding:7px 0 6px;color:var(--faint);font-size:10.5px;font-weight:600;
 }
-nav button svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+nav button svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
 nav button[aria-selected="true"]{color:var(--text)}
 
 /* ---------- toast ---------- */
 #toast{
-  position:fixed;left:50%;transform:translate(-50%,20px);
-  bottom:calc(84px + env(safe-area-inset-bottom));z-index:50;
+  position:fixed;left:50%;transform:translate(-50%,16px);
+  bottom:calc(66px + env(safe-area-inset-bottom));z-index:50;
   background:var(--text);color:var(--bg);
-  padding:9px 15px;border-radius:99px;font-size:13.5px;font-weight:550;
+  padding:8px 14px;border-radius:99px;font-size:13px;font-weight:550;
   opacity:0;pointer-events:none;transition:opacity .18s ease, transform .18s ease;
   max-width:calc(100vw - 40px);text-align:center;
 }
 #toast.on{opacity:1;transform:translate(-50%,0)}
+/* Landscape phones and other very short viewports: strip Today back to the
+   habit and its button so the list still fits without scrolling. History stays
+   available on the Insights tab. */
+@media (max-height: 520px){
+  .hrow{padding:5px 0}
+  .htitle h1{font-size:18px}
+  .htitle p{display:none}
+  #v-today .banner,#v-today .week{display:none}
+  .card{min-height:44px;--mark:clamp(38px,10vh,48px)}
+  .card .body{gap:0}
+  .isect{min-height:46px}
+  nav button{padding:5px 0 4px}
+  nav button svg{width:18px;height:18px}
+}
+
 @media (prefers-reduced-motion: reduce){*{transition:none !important}}
 </style>
 </head>
@@ -511,13 +550,86 @@ var BIN   = '<svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-1
 var view = 'today';
 var openPicker = null;
 
+/* Columns are weekdays: the strip always ends on today, and 7-day periodicity
+   keeps every column on the same weekday however many rows we draw. */
+function weekHead(){
+  var t = todayISO(), out = [];
+  for (var j = 0; j < 7; j++) {
+    out.push('<i' + (j === 6 ? ' class="now"' : '') + '>' +
+             esc(fmt(addDays(t, j - 6), {weekday:'narrow'})) + '</i>');
+  }
+  return out.join('');
+}
+
+function weekCells(h, rows){
+  var t = todayISO(), out = [];
+  for (var i = rows * 7 - 1; i >= 0; i--) {
+    var d = addDays(t, -i);
+    var st = dayState(h, d);
+    out.push(
+      '<button class="day" data-s="' + st + '" data-today="' + (d === t ? 1 : 0) + '"' +
+        ' data-act="toggle" data-id="' + h.id + '" data-date="' + d + '"' +
+        ' aria-label="' + esc(fmt(d, {weekday:'long', day:'numeric', month:'long'})) + ' — ' +
+        (st === 'kept' ? 'done' : st === 'miss' ? 'missed' : 'not tracked') + '"></button>'
+    );
+  }
+  return out.join('');
+}
+
+/* Cards are sized by their content, so the height each one gets is decided
+   here: share out whatever the column has left after the banner and gaps, then
+   spend each card's share on weeks of history instead of blank space. */
+function fillWeeks(){
+  var stack = document.querySelector('#v-today .stack');
+  if (!stack || !state.habits.length) return;
+  var cards = stack.querySelectorAll('.card');
+  if (!cards.length) return;
+
+  var first = cards[0];
+  var body = first.querySelector('.body');
+  var grid = first.querySelector('.wk-grid');
+  if (!body || !grid) return;
+
+  var gridH = grid.getBoundingClientRect().height;
+  if (!(gridH > 0)) return;            /* strip hidden on very short screens */
+  var rowH = gridH + 4;                /* one row + its gap */
+
+  /* everything in the column that is not a card (the banner, any tip) */
+  var fixed = 0;
+  for (var k = 0; k < stack.children.length; k++) {
+    var el = stack.children[k];
+    if (!el.classList.contains('card')) fixed += el.getBoundingClientRect().height;
+  }
+  var gap = parseFloat(getComputedStyle(stack).rowGap) || 0;
+  var share = (stack.clientHeight - fixed - gap * (stack.children.length - 1)) / cards.length;
+
+  /* card height for R rows = chrome + R*rowH - 4, since the last row has no
+     trailing gap; 1px of margin keeps sub-pixel rounding from overflowing */
+  var chrome = first.getBoundingClientRect().height - grid.getBoundingClientRect().height;
+  var rows = Math.floor((share - chrome + 4 - 1) / rowH);
+  rows = Math.max(1, Math.min(rows, 12));
+
+  /* Whole rows rarely divide the share exactly. Grow the squares to swallow the
+     remainder — capped at the column width, since they must stay square. */
+  var colW = (grid.getBoundingClientRect().width - 6 * 4) / 7;
+  var ideal = (share - chrome + 4) / rows - 4;
+  var dot = Math.max(rowH - 4, Math.min(colW, ideal));
+  stack.style.setProperty('--dot', dot.toFixed(2) + 'px');
+
+  if (rows < 2) return;
+  for (var i = 0; i < cards.length; i++) {
+    var h = habitById(cards[i].getAttribute('data-id'));
+    if (h) cards[i].querySelector('.wk-grid').innerHTML = weekCells(h, rows);
+  }
+}
+
 function renderToday(){
   var t = todayISO();
   var out = [];
 
   if (!state.habits.length) {
-    out.push(
-      '<div class="empty">' +
+    document.getElementById('v-today').innerHTML =
+      '<div class="stack"><div class="empty">' +
         '<div class="big">🎯</div>' +
         '<b>Nothing tracked yet</b>' +
         '<p>Pick up to five habits. Every day counts as done unless you say otherwise.</p>' +
@@ -527,9 +639,7 @@ function renderToday(){
                    s.icon + ' ' + esc(s.name) + '</button>';
           }).join('') +
         '</div>' +
-      '</div>'
-    );
-    document.getElementById('v-today').innerHTML = '<div class="stack">' + out.join('') + '</div>';
+      '</div></div>';
     return;
   }
 
@@ -538,10 +648,10 @@ function renderToday(){
   out.push(
     '<div class="banner">' +
       '<b>' + (missedToday.length === 0
-        ? (ps > 1 ? '🔥 ' + plural(ps, 'perfect day') + ' in a row' : 'All five-star so far today')
+        ? (ps > 1 ? '🔥 ' + plural(ps, 'perfect day') + ' in a row' : 'Nothing missed today')
         : plural(missedToday.length, 'habit') + ' marked missed today') + '</b>' +
       '<span>' + (missedToday.length === 0
-        ? 'Nothing to do — days count themselves.'
+        ? 'Days count themselves — tap only what you skipped.'
         : esc(missedToday.map(function(h){ return h.name; }).join(', ')) + ' · tap again to undo') + '</span>' +
     '</div>'
   );
@@ -558,31 +668,18 @@ function renderToday(){
   state.habits.forEach(function(h){
     var s = stats(h);
     var missed = missedOn(h, t);
-    var days = [];
-    for (var i = 6; i >= 0; i--) {
-      var d = addDays(t, -i);
-      var st = dayState(h, d);
-      days.push(
-        '<button class="day" data-s="' + st + '" data-today="' + (d === t ? 1 : 0) + '"' +
-          ' data-act="toggle" data-id="' + h.id + '" data-date="' + d + '"' +
-          ' aria-label="' + esc(fmt(d, {weekday:'long', day:'numeric', month:'long'})) + ' — ' +
-          (st === 'kept' ? 'done' : st === 'miss' ? 'missed' : 'not tracked') + '">' +
-          '<i>' + esc(fmt(d, {weekday:'narrow'})) + '</i><b></b>' +
-        '</button>'
-      );
-    }
-
     out.push(
-      '<article class="card" style="--c:' + h.color + '">' +
+      '<article class="card" data-id="' + h.id + '" style="--c:' + h.color + '">' +
         '<div class="body">' +
-          '<div class="top"><span class="emoji">' + esc(h.icon) + '</span><h2>' + esc(h.name) + '</h2></div>' +
-          '<div class="sub">' +
+          '<div class="top">' +
+            '<span class="emoji">' + esc(h.icon) + '</span>' +
+            '<h2>' + esc(h.name) + '</h2>' +
             (s.cur > 0
-              ? '<span class="flame">🔥 ' + plural(s.cur, 'day') + '</span>'
-              : '<span>Streak broken — restart today</span>') +
-            (s.best > s.cur && s.best > 1 ? '<span class="pill">best ' + s.best + '</span>' : '') +
+              ? '<span class="flame">🔥 ' + s.cur + '</span>'
+              : '<span class="broken">start again</span>') +
           '</div>' +
-          '<div class="week">' + days.join('') + '</div>' +
+          '<div class="week"><div class="wk-head">' + weekHead() + '</div>' +
+            '<div class="wk-grid">' + weekCells(h, 1) + '</div></div>' +
         '</div>' +
         '<button class="mark" data-state="' + (missed ? 'missed' : 'kept') + '"' +
           ' data-act="toggle" data-id="' + h.id + '" data-date="' + t + '"' +
@@ -594,49 +691,40 @@ function renderToday(){
     );
   });
 
-  document.getElementById('v-today').innerHTML = '<div class="stack">' + out.join('') + '</div>';
+  document.getElementById('v-today').innerHTML =
+    '<div class="stack" data-n="' + state.habits.length + '">' + out.join('') + '</div>';
+  fillWeeks();
 }
 
 function renderInsights(){
   var el = document.getElementById('v-insights');
   if (!state.habits.length) {
-    el.innerHTML = '<div class="empty"><div class="big">📈</div><b>No data yet</b>' +
-      '<p>Add a habit and your streaks, rates and calendar show up here.</p></div>';
+    el.innerHTML = '<div class="stack"><div class="empty"><div class="big">📈</div><b>No data yet</b>' +
+      '<p>Add a habit and your streaks, rates and calendar show up here.</p></div></div>';
     return;
   }
 
   var t = todayISO();
-  var ps = perfectStreak();
   var first = earliestStart();
-  var logged = diffDays(first, t) + 1;
   var bestOverall = state.habits.reduce(function(a, h){ return Math.max(a, stats(h).best); }, 0);
   var out = [];
 
   out.push(
-    '<div class="grid2">' +
-      '<div class="stat"><div class="k">Perfect-day streak</div><div class="v">' + ps + ' <small>' + (ps === 1 ? 'day' : 'days') + '</small></div>' +
-        '<div class="n">every habit kept</div></div>' +
-      '<div class="stat"><div class="k">Longest streak</div><div class="v">' + bestOverall + ' <small>' + (bestOverall === 1 ? 'day' : 'days') + '</small></div>' +
-        '<div class="n">across all habits</div></div>' +
-      '<div class="stat"><div class="k">Days logged</div><div class="v">' + logged + '</div>' +
-        '<div class="n">since ' + esc(fmt(first, {day:'numeric', month:'short', year:'numeric'})) + '</div></div>' +
-      '<div class="stat"><div class="k">Misses this month</div><div class="v">' + missesThisMonth() + '</div>' +
-        '<div class="n">' + esc(fmt(t, {month:'long'})) + '</div></div>' +
+    '<div class="summary">' +
+      '<div><b>' + perfectStreak() + '</b><span>perfect days</span></div>' +
+      '<div><b>' + bestOverall + '</b><span>best streak</span></div>' +
+      '<div><b>' + (diffDays(first, t) + 1) + '</b><span>days logged</span></div>' +
+      '<div><b>' + missesThisMonth() + '</b><span>missed in ' + esc(fmt(t, {month:'short'})) + '</span></div>' +
     '</div>'
   );
 
+  /* five weeks of squares, weekday-aligned, ending with the week containing today */
+  var startWeekday = (parseISO(t).getDay() + 6) % 7;   /* 0 = Monday */
+  var lastCell = addDays(t, 6 - startWeekday);         /* Sunday of this week */
+
   state.habits.forEach(function(h){
     var s = stats(h);
-    var pct = Math.round(s.recentRate * 100);
-
-    /* 5-week calendar, columns aligned to weekdays, ending with today's week */
-    var startWeekday = (parseISO(t).getDay() + 6) % 7;      /* 0 = Monday */
-    var lastCell = addDays(t, 6 - startWeekday);            /* Sunday of this week */
     var cells = [];
-    var heads = [];
-    for (var w = 0; w < 7; w++) {
-      heads.push('<div class="h">' + esc(fmt(addDays(t, w - startWeekday), {weekday:'narrow'})) + '</div>');
-    }
     for (var i = 34; i >= 0; i--) {
       var d = addDays(lastCell, -i);
       var st = dayState(h, d);
@@ -648,23 +736,18 @@ function renderInsights(){
       );
     }
 
-    var goal;
-    if (s.cur === 0) goal = 'Tap today’s circle back on, or just start again tomorrow.';
-    else if (s.cur >= s.best) goal = 'You are at your all-time best. Keep going.';
-    else goal = plural(s.best - s.cur, 'day') + ' to beat your best of ' + s.best + '.';
-
     out.push(
-      '<div class="sect" style="--c:' + h.color + '">' +
-        '<div class="head"><span class="emoji">' + esc(h.icon) + '</span><h3>' + esc(h.name) + '</h3></div>' +
-        '<div class="trio">' +
-          '<div><div class="v" style="color:' + h.color + '">' + s.cur + '</div><div class="k">current</div></div>' +
-          '<div><div class="v">' + s.best + '</div><div class="k">best</div></div>' +
-          '<div><div class="v">' + s.misses + '</div><div class="k">misses</div></div>' +
+      '<div class="isect" style="--c:' + h.color + '">' +
+        '<div class="ileft">' +
+          '<div class="itop"><span class="emoji">' + esc(h.icon) + '</span><h3>' + esc(h.name) + '</h3></div>' +
+          '<div class="inums">' +
+            '<span><b>' + s.cur + '</b>now</span>' +
+            '<span><b>' + s.best + '</b>best</span>' +
+            '<span><b>' + s.misses + '</b>miss</span>' +
+            '<span><b>' + Math.round(s.recentRate * 100) + '%</b>' + s.recentTotal + 'd</span>' +
+          '</div>' +
         '</div>' +
-        '<div class="barlab"><span>Last ' + s.recentTotal + ' days</span><span>' + pct + '%</span></div>' +
-        '<div class="bar"><i style="width:' + pct + '%"></i></div>' +
-        '<div class="cal">' + heads.join('') + cells.join('') + '</div>' +
-        '<div class="note">' + esc(goal) + '</div>' +
+        '<div class="ical">' + cells.join('') + '</div>' +
       '</div>'
     );
   });
@@ -673,12 +756,12 @@ function renderInsights(){
     '<div class="legend">' +
       '<span><i style="background:linear-gradient(135deg,#16a34a,#0ea5e9,#f59e0b,#ec4899)"></i>done</span>' +
       '<span><i style="border:1.5px dashed var(--miss)"></i>missed</span>' +
-      '<span><i style="background:var(--untracked)"></i>not tracked</span>' +
-      '<span>tap any square to correct it</span>' +
+      '<span><i style="background:var(--untracked)"></i>untracked</span>' +
+      '<span>tap a square to fix it</span>' +
     '</div>'
   );
 
-  el.innerHTML = '<div class="stack">' + out.join('') + '</div>';
+  el.innerHTML = '<div class="stack" data-n="' + state.habits.length + '">' + out.join('') + '</div>';
 }
 
 function renderHabits(){
@@ -689,53 +772,53 @@ function renderHabits(){
     out.push(
       '<div class="row" style="--c:' + h.color + '">' +
         '<div class="line">' +
-          '<button class="emo" data-act="picker" data-id="' + h.id + '" aria-label="Change icon for ' + esc(h.name) + '">' + esc(h.icon) + '</button>' +
+          '<button class="emo" data-act="picker" data-id="' + h.id + '"' +
+            ' aria-expanded="' + (openPicker === h.id) + '"' +
+            ' aria-label="Icon and colour for ' + esc(h.name) + '">' + esc(h.icon) + '</button>' +
           '<input type="text" value="' + esc(h.name) + '" maxlength="40" data-act="rename" data-id="' + h.id + '" aria-label="Habit name">' +
           '<button class="del" data-act="delete" data-id="' + h.id + '" aria-label="Delete ' + esc(h.name) + '">' + BIN + '</button>' +
         '</div>' +
         (openPicker === h.id
-          ? '<div class="emopick">' + EMOJI.map(function(e){
-              return '<button data-act="seticon" data-id="' + h.id + '" data-icon="' + esc(e) + '"' +
-                     ' aria-pressed="' + (e === h.icon) + '">' + e + '</button>';
-            }).join('') + '</div>'
+          ? '<div class="panel">' +
+              '<div class="emopick">' + EMOJI.map(function(e){
+                return '<button data-act="seticon" data-id="' + h.id + '" data-icon="' + esc(e) + '"' +
+                       ' aria-pressed="' + (e === h.icon) + '">' + e + '</button>';
+              }).join('') + '</div>' +
+              '<div class="swatches">' +
+                PALETTE.map(function(c){
+                  return '<button class="sw" data-act="setcolor" data-id="' + h.id + '" data-color="' + c + '"' +
+                         ' aria-pressed="' + (c === h.color) + '" aria-label="Colour ' + c + '"><i style="background:' + c + '"></i></button>';
+                }).join('') +
+                '<span class="meta">since ' + esc(fmt(h.start, {day:'numeric', month:'short'})) +
+                  ' · ' + s.kept + '/' + s.total + ' kept</span>' +
+              '</div>' +
+            '</div>'
           : '') +
-        '<div class="swatches">' +
-          PALETTE.map(function(c){
-            return '<button class="sw" data-act="setcolor" data-id="' + h.id + '" data-color="' + c + '"' +
-                   ' aria-pressed="' + (c === h.color) + '" aria-label="Colour ' + c + '"><i style="background:' + c + '"></i></button>';
-          }).join('') +
-        '</div>' +
-        '<div class="meta-line">Started ' + esc(fmt(h.start, {day:'numeric', month:'short', year:'numeric'})) +
-          ' · ' + s.kept + '/' + s.total + ' days kept</div>' +
       '</div>'
     );
   });
 
   if (state.habits.length < MAX) {
     out.push(
-      '<div class="addbox">' +
-        '<div class="line">' +
-          '<input type="text" id="newName" placeholder="New habit" maxlength="40" enterkeyhint="done">' +
-          '<button class="btn" data-act="add">Add</button>' +
-        '</div>' +
-      '</div>' +
-      '<p class="hint">' + (MAX - state.habits.length) + ' of ' + MAX + ' slots free</p>'
+      '<div class="addbox"><div class="line">' +
+        '<input type="text" id="newName" placeholder="New habit" maxlength="40" enterkeyhint="done">' +
+        '<button class="btn" data-act="add">Add</button>' +
+      '</div></div>' +
+      '<p class="hint">' + (MAX - state.habits.length) + ' of ' + MAX + ' free · tap an icon to restyle</p>'
     );
   } else {
-    out.push('<p class="hint">Five habits is the maximum — that is the point. Delete one to swap it out.</p>');
+    out.push('<p class="hint">Five is the maximum — delete one to swap it out.</p>');
   }
 
   out.push(
     '<div class="sect">' +
-      '<div class="head"><h3>Your data</h3></div>' +
-      '<p class="note" style="margin:0 0 12px">Everything lives in this browser only. Nothing is uploaded. Clearing site data wipes it, so export a backup now and then.</p>' +
+      '<h3>Your data</h3>' +
       '<div class="btnrow">' +
-        '<button class="btn ghost" data-act="export">Export backup</button>' +
-        '<button class="btn ghost" data-act="import">Import backup</button>' +
+        '<button class="btn ghost" data-act="export">Export</button>' +
+        '<button class="btn ghost" data-act="import">Import</button>' +
+        '<button class="btn ghost" data-act="reset">Erase</button>' +
       '</div>' +
-      '<div class="btnrow" style="margin-top:8px">' +
-        '<button class="btn ghost" data-act="reset">Erase everything</button>' +
-      '</div>' +
+      '<p class="note">This browser only, never uploaded. Export a backup now and then.</p>' +
       '<input type="file" id="fileIn" accept="application/json,.json" hidden>' +
     '</div>'
   );
@@ -762,14 +845,15 @@ function render(){
 }
 
 function setView(v){
-  if (view === v) { window.scrollTo({ top:0, behavior:'smooth' }); return; }
+  var m = document.querySelector('main');
+  if (view === v) { m.scrollTo({ top:0, behavior:'smooth' }); return; }
   view = v;
   openPicker = null;
   Array.prototype.forEach.call(document.querySelectorAll('nav button'), function(b){
     b.setAttribute('aria-selected', String(b.dataset.view === v));
   });
   render();
-  window.scrollTo(0, 0);
+  m.scrollTop = 0;
 }
 
 /* ------------------------------------------------------------------ *
@@ -897,11 +981,6 @@ document.addEventListener('keydown', function(ev){
   if (ev.key === 'Enter' && ev.target.dataset && ev.target.dataset.act === 'rename') ev.target.blur();
 });
 
-/* header hairline on scroll */
-addEventListener('scroll', function(){
-  document.getElementById('hdr').classList.toggle('scrolled', window.scrollY > 4);
-}, { passive:true });
-
 /* roll over at midnight, and whenever the app comes back to the foreground */
 var lastDay = todayISO();
 function checkDay(){
@@ -909,6 +988,7 @@ function checkDay(){
   if (t !== lastDay) { lastDay = t; render(); }
 }
 setInterval(checkDay, 30000);
+addEventListener('resize', function(){ if (view === 'today') render(); });
 document.addEventListener('visibilitychange', function(){ if (!document.hidden) checkDay(); });
 
 /* ------------------------------------------------------------------ *

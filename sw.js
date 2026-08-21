@@ -1,6 +1,6 @@
 /* Tiny stale-while-revalidate cache so the tracker opens instantly and works
    with no signal. Bump CACHE to force everyone onto a new version. */
-var CACHE = 'streaks-v1';
+var CACHE = 'streaks-v2';
 var ASSETS = ['./', './index.html', './manifest.webmanifest', './icon.svg', './apple-touch-icon.png', './icon-512.png'];
 
 self.addEventListener('install', function(e){
