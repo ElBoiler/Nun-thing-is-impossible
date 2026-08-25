@@ -18,16 +18,31 @@ failed one. This one inverts that:
 
 So a perfect week costs zero taps. The circle on each habit is filled by
 default; tapping it turns it into a dashed cross and breaks the streak. Tap it
-again to undo. The seven dots under each habit are the last week — tap any of
+again to undo. The squares under each habit are its recent history — tap any of
 them (or any square in Insights) to correct a day you forgot to mark.
 
 Five habits maximum, one decision per habit per day. That's the whole app.
+
+## It doesn't scroll
+
+The app is a fixed three-row shell — header, one content region, tab bar — so
+the page itself never moves: no rubber-banding, no address bar sliding in and
+out, no scroll position to lose. Everything is sized to the viewport instead.
+
+Rather than pad that space out, each habit card spends it on history: the strip
+under a habit grows to however many weeks fit, measured after layout. Five
+habits on a small phone get one week each; two habits on a large one get seven.
+Squares stay weekday-aligned in their columns either way, with today at the
+bottom right.
+
+The one place content can still exceed the viewport is Insights or Habits on a
+landscape phone, where the content region — not the page — scrolls.
 
 ## Tabs
 
 | Tab | What's in it |
 | --- | --- |
-| **Today** | Each habit with its current streak, a big tap-to-miss button, and the last 7 days. |
+| **Today** | Each habit with its current streak, a big tap-to-miss button, and its recent history. |
 | **Insights** | Perfect-day streak, longest streak, days logged, misses this month; then per habit: current/best streak, misses, a 30-day rate bar, and a five-week calendar. |
 | **Habits** | Add, rename, re-icon, recolour, delete. Export/import a JSON backup. Erase everything. |
 
