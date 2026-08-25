@@ -1,14 +1,15 @@
 # Aufbau und Wiederverwendung
 
 Dieses Projekt ist als **Gerüst für weitere Bohle-Werkzeuge** gedacht: eine Chrome-Erweiterung ohne
-Build-Schritt, ohne Fremdbibliotheken und ohne Netzwerkzugriff, mit einem klar getrennten Kern, der sich auch
-in Node testen lässt.
+Build-Schritt, mit genau einer mitgelieferten Bibliothek und ohne Netzwerkzugriff, mit einem klar getrennten
+Kern, der sich auch in Node testen lässt.
 
 ## Entscheidungen
 
 | Entscheidung | Grund |
 | --- | --- |
-| **Keine Abhängigkeiten** | Alles läuft mit Bordmitteln des Browsers: `CompressionStream` für ZIP/XLSX, `DecompressionStream` für die Streams im PDF, `DOMParser` wird bewusst nicht gebraucht. Kein Build, kein Bundler, kein Lieferkettenrisiko, und `npm install` ist nur für den Browser-Test nötig. |
+| **Fast keine Abhängigkeiten** | ZIP, XLSX und XML laufen mit Bordmitteln: `CompressionStream`/`DecompressionStream` und ein eigener XML-Tokenizer; `DOMParser` wird bewusst nicht gebraucht. Kein Build, kein Bundler. |
+| **pdf.js für die PDF-Textebene** | Der einzige Fremdcode. PDF ist ein zu großes Format, um es nebenbei selbst zu lesen: kaputte Querverweistabellen, Schrifteinbettungen, Encodings, gedrehte Seiten. pdf.js kennt diese Fälle seit über zehn Jahren. Es liegt fertig gebaut in `vendor/pdfjs/` (Apache-2.0), damit es ohne Build-Schritt und ohne Auflösung aus `node_modules` läuft, und arbeitet in einem eigenen Worker — die Oberfläche bleibt bedienbar. |
 | **Kein Netzwerkzugriff** | Die Erweiterung hat keine `host_permissions`. Auftragsdaten verlassen den Rechner nicht — das ist bei Kundendokumenten die einzig vertretbare Voreinstellung. |
 | **Eigener Tab statt Popup** | Ein Mapping bedeutet, lange PDF-Zeilen und breite Tabellen nebeneinander zu lesen. Ein 400-px-Popup taugt dafür nicht. |
 | **Vorlage wird ergänzt, nicht neu erzeugt** | Die Vorlage ist das Dokument des Kunden. Der Writer schneidet `<c>`-Elemente an Byte-Offsets in die Blatt-XML und kopiert alle übrigen ZIP-Einträge unverändert durch. |
@@ -27,8 +28,7 @@ src/core/                  … kennt weder DOM noch chrome.* — in Node testbar
   a1.js                    A1-Referenzen (B4, Blatt!B4, A1:C10)
   xlsx-read.js             Arbeitsmappe lesen (Shared Strings, Formate, Datumswerte)
   xlsx-write.js            Werte in eine Vorlage schreiben, Rest unverändert lassen
-  pdf-text.js              PDF-Objektgraph, Filter, Schriften, Textoperatoren → Zeilen
-  standard-widths.js       Zeichenbreiten der Base-14-Schriften (Spaltentrennung)
+  pdf-text.js              pdf.js ansteuern und Textfragmente zu Zeilen zusammensetzen
   document.js              Vereinheitlichtes Eingabemodell (PDF und XLSX)
   values.js                Quellen und Transformationen
   expr.js                  Kleine, sichere Formelsprache
@@ -43,6 +43,8 @@ src/app/                   … UI, nur hier stehen DOM und chrome.*
   storage.js               Regelsätze in chrome.storage.local
 
 src/branding/              brand.css (Tokens) und logo.svg
+vendor/pdfjs/              pdf.js (Apache-2.0), erzeugt mit npm run vendor:pdfjs
+tools/vendor-pdfjs.mjs     kopiert den pdf.js-Build aus node_modules nach vendor/
 test/                      run.mjs (Kern), e2e.mjs (echter Chromium), Fixtures
 ```
 
@@ -77,5 +79,11 @@ der Prompt für Claude. Was dort fehlt, wird Claude nie in eine Regeldatei schre
 * **Verschlüsselte PDFs** werden abgelehnt statt halb geraten.
 * **`.xls`** (das alte Binärformat) wird nicht gelesen — vorher als `.xlsx` speichern.
 * **ZIP64** wird nicht unterstützt; für Office-Dateien praktisch irrelevant.
-* Der PDF-Textextraktor zielt auf maschinell erzeugte Dokumente. Bei exotischen Schrifteinbettungen ohne
-  `/ToUnicode` kann die Zuordnung von Zeichen ungenau werden; die Vorschau zeigt das sofort.
+* Aus pdf.js sind bewusst **nicht** mitgeliefert: `standard_fonts/`, `cmaps/` und `wasm/`. Sie werden zum
+  *Zeichnen* von Glyphen, für vordefinierte CJK-Kodierungen und zum Dekodieren von Bildern gebraucht — hier
+  wird nur die Textebene gelesen. Die Extraktion wurde mit und ohne Standardschriften auf identisches
+  Ergebnis geprüft. Falls doch einmal nötig: Ordner nach `vendor/pdfjs/` kopieren und in `pdf-text.js`
+  `standardFontDataUrl` bzw. `cMapUrl` setzen.
+* Zeilen entstehen aus Positionen: Fragmente werden nach Grundlinie gruppiert und über ihren Abstand
+  getrennt. Bei mehrspaltigen Kopfbereichen können zwei nebeneinander stehende Felder in einer Zeile landen —
+  die Vorschau zeigt das sofort, und `label` lässt sich mit `pattern` nachschärfen.

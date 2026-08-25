@@ -8,9 +8,11 @@
     "test": "node test/run.mjs",
     "test:e2e": "node test/e2e.mjs",
     "fixtures": "python3 test/make-fixtures.py",
-    "icons": "python3 assets/make-icons.py"
+    "icons": "python3 assets/make-icons.py",
+    "vendor:pdfjs": "node tools/vendor-pdfjs.mjs"
   },
   "devDependencies": {
+    "pdfjs-dist": "^6.2.108",
     "playwright-core": "^1.49.0"
   },
   "engines": {

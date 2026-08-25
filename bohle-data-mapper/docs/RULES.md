@@ -198,5 +198,6 @@ Division durch Null ergibt einen leeren Wert (keine Fehlermeldung, kein `#DIV/0!
 | Feld bleibt leer | Beschriftung anders geschrieben (`Auftrags-Nr.` statt `Auftragsnummer`) oder Wert steht in der nächsten Zeile → `mode: "nextLine"` oder `coalesce` mit mehreren Varianten. |
 | Zahl landet als Text | `{"op": "number", "decimal": "de"}` ergänzen und `"type": "number"` setzen. |
 | Datum landet als Zahl | Zielzelle der Vorlage hat kein Datumsformat. Entweder Vorlage anpassen oder mit `{"op":"date","to":"DD.MM.YYYY"}` als Text schreiben. |
-| Spalten kleben aneinander | Bei PDFs ohne Schriftbreiten kann die Spaltentrennung ungenau werden. `\s+` im Muster durch `\s*` ersetzen oder über `label`/Positionen arbeiten. |
+| Spalten kleben aneinander | Zwei Werte standen im PDF so dicht nebeneinander, dass kein Leerzeichen erkannt wurde. `\s+` im Muster durch `\s*` ersetzen oder die Werte einzeln über `label` holen. |
+| Zwei Felder in einer Zeile | Mehrspaltige Kopfbereiche landen in einer Textzeile („Kunde: … Datum: …“). `label` zusätzlich mit `pattern` einschränken, damit nur der eigene Wert übrig bleibt. |
 | „No text layer found“ | Gescanntes PDF ohne Textebene — vorher OCR laufen lassen. |
