@@ -1,0 +1,92 @@
+/**
+ * Bohle Isoliertechnik — brand tokens.
+ *
+ * Every colour, radius and font in the app resolves to a variable defined
+ * here, so re-skinning the scaffold for another Bohle tool (or another client)
+ * is a single-file change.
+ *
+ * The palette follows the corporate design in spirit — a solid dark blue as
+ * the primary, light blue as the supporting accent — but the exact values and
+ * the logo mark are PLACEHOLDERS. Replace them with the official brand assets
+ * before this ships to anyone outside the team; see BRANDING.md.
+ */
+
+:root {
+  /* Primary — deep corporate blue */
+  --bohle-navy-900: #071d34;
+  --bohle-navy-800: #0b2a4a;
+  --bohle-navy-700: #103a63;
+  --bohle-navy-600: #17497c;
+
+  /* Accent — supporting light blue */
+  --bohle-blue-500: #1c76c4;
+  --bohle-blue-400: #4b9bd5;
+  --bohle-blue-300: #7fc4ea;
+  --bohle-blue-100: #dceefb;
+  --bohle-blue-050: #f1f8fd;
+
+  /* Neutrals */
+  --grey-900: #16202c;
+  --grey-700: #3d4a5a;
+  --grey-500: #6b7a8c;
+  --grey-300: #c3ccd6;
+  --grey-200: #dde3ea;
+  --grey-100: #eef2f6;
+  --grey-050: #f7f9fb;
+  --white: #ffffff;
+
+  /* Status */
+  --ok-600: #1c7d52;
+  --ok-100: #e2f4ec;
+  --warn-600: #a06104;
+  --warn-100: #fdf1dc;
+  --error-600: #b3261e;
+  --error-100: #fbe6e4;
+
+  /* Semantic roles */
+  --surface: var(--white);
+  --surface-sunken: var(--grey-050);
+  --surface-raised: var(--white);
+  --border: var(--grey-200);
+  --border-strong: var(--grey-300);
+  --text: var(--grey-900);
+  --text-muted: var(--grey-500);
+  --text-inverse: var(--white);
+  --accent: var(--bohle-blue-500);
+  --accent-soft: var(--bohle-blue-050);
+  --header-bg: var(--bohle-navy-800);
+  --focus-ring: var(--bohle-blue-400);
+
+  /* Shape and type */
+  --radius-sm: 4px;
+  --radius: 8px;
+  --radius-lg: 14px;
+  --shadow-sm: 0 1px 2px rgb(7 29 52 / 8%);
+  --shadow: 0 6px 20px rgb(7 29 52 / 10%);
+  --font-sans: "Segoe UI", "Helvetica Neue", Arial, system-ui, sans-serif;
+  --font-mono: "Cascadia Mono", "SF Mono", "JetBrains Mono", Consolas, monospace;
+  --step: 8px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --surface: #10202f;
+    --surface-sunken: #0b1926;
+    --surface-raised: #16293b;
+    --border: #24394d;
+    --border-strong: #33506b;
+    --text: #e8eef4;
+    --text-muted: #9fb1c2;
+    --accent: var(--bohle-blue-300);
+    --accent-soft: #12304a;
+    --header-bg: var(--bohle-navy-900);
+    --ok-100: #12332a;
+    --warn-100: #38290f;
+    --error-100: #3a1c1a;
+    --ok-600: #6bd6a6;
+    --warn-600: #e3ac52;
+    --error-600: #ef8f88;
+    --shadow-sm: 0 1px 2px rgb(0 0 0 / 40%);
+    --shadow: 0 8px 24px rgb(0 0 0 / 45%);
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "name": "Auftrag (Excel) → Kalkulationsblatt",
+  "description": "Überträgt Kopfdaten aus dem Blatt \"Kopf\" und alle Zeilen aus \"Positionen\" in die Kalkulationsvorlage; die Gesamtspalte wird berechnet.",
+  "input": { "type": "xlsx" },
+  "output": { "sheet": "Kalkulation" },
+
+  "fields": [
+    { "name": "auftragsnummer", "source": { "type": "cell", "ref": "Kopf!B2" }, "required": true },
+    { "name": "kunde", "source": { "type": "cell", "ref": "Kopf!B3" } },
+    { "name": "datum", "source": { "type": "cell", "ref": "Kopf!B4" } },
+    { "name": "baustelle", "source": { "type": "cell", "ref": "Kopf!B5" } }
+  ],
+
+  "cells": [
+    { "target": "B4", "source": { "type": "field", "name": "auftragsnummer" } },
+    { "target": "B5", "source": { "type": "field", "name": "kunde" } },
+    { "target": "B6", "source": { "type": "field", "name": "datum" }, "type": "date" },
+    { "target": "B7", "source": { "type": "field", "name": "baustelle" } },
+    { "target": "B8", "source": { "type": "literal", "value": "=SUM(F12:F31)" }, "type": "formula" }
+  ],
+
+  "tables": [
+    {
+      "name": "positionen",
+      "rows": { "type": "sheetRows", "sheet": "Positionen", "headerRow": 1 },
+      "target": { "sheet": "Kalkulation", "startRow": 12, "maxRows": 20, "clearRows": 20 },
+      "columns": [
+        { "column": "A", "source": { "type": "column", "name": "Pos" }, "type": "number" },
+        { "column": "B", "source": { "type": "column", "name": "Bezeichnung" } },
+        { "column": "C", "source": { "type": "column", "name": "Menge" }, "type": "number" },
+        { "column": "D", "source": { "type": "column", "name": "Einheit" } },
+        { "column": "E", "source": { "type": "column", "name": "Einzelpreis" }, "type": "number" },
+        {
+          "column": "F",
+          "description": "Menge × Einzelpreis, auf zwei Stellen gerundet",
+          "source": { "type": "expr", "expression": "round(Menge * Einzelpreis, 2)" },
+          "type": "number"
+        }
+      ]
+    }
+  ]
+}

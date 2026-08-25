@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48" role="img" aria-label="Bohle Isoliertechnik">
+  <title>Bohle Isoliertechnik</title>
+  <rect width="48" height="48" rx="10.5" fill="#0b2a4a"/>
+  <!-- Open shells around a core: the layered insulation the company builds. -->
+  <path d="M 30.4 12.6 A 16.2 16.2 0 1 0 30.4 35.4" fill="none" stroke="#4b9bd5" stroke-width="3.6" stroke-linecap="round"/>
+  <path d="M 29.4 17.6 A 10.6 10.6 0 1 0 29.4 30.4" fill="none" stroke="#7fc4ea" stroke-width="3.4" stroke-linecap="round"/>
+  <circle cx="24" cy="24" r="5.5" fill="#f0f8fd"/>
+</svg>

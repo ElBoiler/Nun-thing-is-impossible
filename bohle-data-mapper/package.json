@@ -1,0 +1,19 @@
+{
+  "name": "bohle-data-mapper",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Chrome extension that maps data from PDF or Excel files into an Excel template using rules.",
+  "type": "module",
+  "scripts": {
+    "test": "node test/run.mjs",
+    "test:e2e": "node test/e2e.mjs",
+    "fixtures": "python3 test/make-fixtures.py",
+    "icons": "python3 assets/make-icons.py"
+  },
+  "devDependencies": {
+    "playwright-core": "^1.49.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

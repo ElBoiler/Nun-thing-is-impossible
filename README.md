@@ -1,5 +1,8 @@
 # Streaks — a five-habit tracker
 
+> **Also in this repository:** [`bohle-data-mapper/`](bohle-data-mapper/) — a Chrome extension that maps data
+> from PDF/Excel files into an Excel template using rules, built as a scaffold for further Bohle tools.
+
 A habit tracker for a phone. One HTML file, no build step, no framework, no
 network calls. Everything you do stays in your browser's `localStorage`.
 
