@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bohle Datenmapper</title>
+  <link rel="icon" href="../../assets/icon-48.png">
+  <link rel="stylesheet" href="../branding/brand.css">
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <svg class="brand__mark" viewBox="0 0 48 48" aria-hidden="true">
+        <rect width="48" height="48" rx="10.5" fill="#0b2a4a"/>
+        <path d="M 30.4 12.6 A 16.2 16.2 0 1 0 30.4 35.4" fill="none" stroke="#4b9bd5" stroke-width="3.6" stroke-linecap="round"/>
+        <path d="M 29.4 17.6 A 10.6 10.6 0 1 0 29.4 30.4" fill="none" stroke="#7fc4ea" stroke-width="3.4" stroke-linecap="round"/>
+        <circle cx="24" cy="24" r="5.5" fill="#f0f8fd"/>
+      </svg>
+      <div class="brand__text">
+        <span class="brand__company">Bohle Isoliertechnik</span>
+        <span class="brand__app">Datenmapper</span>
+      </div>
+    </div>
+    <p class="topbar__note">
+      <span class="dot" aria-hidden="true"></span>
+      Alle Dateien werden lokal im Browser verarbeitet — nichts wird hochgeladen.
+    </p>
+  </header>
+
+  <main class="layout">
+    <aside class="column column--steps">
+      <section class="card" data-step="1">
+        <h2><span class="step-number">1</span> Eingangsdatei</h2>
+        <p class="card__hint">PDF oder Excel-Datei, aus der Daten gelesen werden.</p>
+        <div class="dropzone" id="input-drop" tabindex="0" role="button"
+             aria-label="Eingangsdatei auswählen oder hierher ziehen">
+          <input type="file" id="input-file" accept=".pdf,.xlsx,.xlsm" hidden>
+          <span class="dropzone__icon" aria-hidden="true">＋</span>
+          <span class="dropzone__label">Datei ablegen oder klicken</span>
+          <span class="dropzone__formats">PDF · XLSX · XLSM</span>
+        </div>
+        <div class="file-summary" id="input-summary" hidden></div>
+      </section>
+
+      <section class="card" data-step="2">
+        <h2><span class="step-number">2</span> Ausgabevorlage</h2>
+        <p class="card__hint">Excel-Vorlage, die befüllt wird. Layout und Formeln bleiben erhalten.</p>
+        <div class="dropzone" id="template-drop" tabindex="0" role="button"
+             aria-label="Excel-Vorlage auswählen oder hierher ziehen">
+          <input type="file" id="template-file" accept=".xlsx,.xlsm" hidden>
+          <span class="dropzone__icon" aria-hidden="true">＋</span>
+          <span class="dropzone__label">Vorlage ablegen oder klicken</span>
+          <span class="dropzone__formats">XLSX · XLSM</span>
+        </div>
+        <div class="file-summary" id="template-summary" hidden></div>
+      </section>
+
+      <section class="card" data-step="3">
+        <h2><span class="step-number">3</span> Regeln</h2>
+        <p class="card__hint">Mapping-Regeln als JSON — im Reiter „Regeln“ bearbeiten.</p>
+        <label class="field">
+          <span>Gespeicherte Regelsätze</span>
+          <select id="preset-select">
+            <option value="">– keine Auswahl –</option>
+          </select>
+        </label>
+        <div class="button-row">
+          <button type="button" id="preset-save" class="button button--ghost">Speichern unter …</button>
+          <button type="button" id="preset-delete" class="button button--ghost" disabled>Löschen</button>
+        </div>
+        <div class="button-row">
+          <button type="button" id="rules-import" class="button button--ghost">JSON laden …</button>
+          <button type="button" id="rules-export" class="button button--ghost">JSON sichern</button>
+          <input type="file" id="rules-file" accept=".json,application/json" hidden>
+        </div>
+        <p class="validation" id="rules-validation">Keine Regeln geladen.</p>
+      </section>
+
+      <div class="run-bar">
+        <button type="button" id="run" class="button button--primary" disabled>Mapping ausführen</button>
+        <button type="button" id="download" class="button button--secondary" hidden>Ergebnis herunterladen</button>
+        <p class="run-status" id="run-status" role="status" aria-live="polite"></p>
+      </div>
+    </aside>
+
+    <section class="column column--work">
+      <nav class="tabs" role="tablist">
+        <button type="button" class="tab is-active" role="tab" data-tab="preview" aria-selected="true">Vorschau</button>
+        <button type="button" class="tab" role="tab" data-tab="rules" aria-selected="false">Regeln</button>
+        <button type="button" class="tab" role="tab" data-tab="report" aria-selected="false">Bericht</button>
+        <button type="button" class="tab" role="tab" data-tab="help" aria-selected="false">Hilfe</button>
+      </nav>
+
+      <div class="tab-panel is-active" id="panel-preview" role="tabpanel">
+        <div class="panel-toolbar">
+          <div class="segmented" id="preview-source" role="group" aria-label="Vorschau-Quelle">
+            <button type="button" class="segmented__item is-active" data-source="input">Eingangsdatei</button>
+            <button type="button" class="segmented__item" data-source="template">Vorlage</button>
+          </div>
+          <input type="search" id="preview-search" placeholder="In der Vorschau suchen …" aria-label="Vorschau durchsuchen">
+          <button type="button" id="copy-prompt" class="button button--ghost" title="Prompt mit Struktur der Dateien in die Zwischenablage kopieren">
+            Prompt für Claude kopieren
+          </button>
+        </div>
+        <div class="preview" id="preview">
+          <p class="empty-state">Noch keine Datei geladen. Legen Sie links eine Eingangsdatei ab — hier erscheinen
+            dann die erkannten Textzeilen bzw. Tabellenzellen mit ihren Referenzen.</p>
+        </div>
+      </div>
+
+      <div class="tab-panel" id="panel-rules" role="tabpanel">
+        <div class="panel-toolbar">
+          <span class="toolbar-label">Regeln (JSON)</span>
+          <button type="button" id="rules-format" class="button button--ghost">Formatieren</button>
+          <button type="button" id="rules-example" class="button button--ghost">Beispiel einfügen</button>
+        </div>
+        <textarea id="rules-editor" class="editor" spellcheck="false"
+                  aria-label="Mapping-Regeln als JSON"
+                  placeholder='{ "version": 1, "name": "…", "output": { "sheet": "Tabelle1" }, "cells": [] }'></textarea>
+        <pre class="editor-messages" id="rules-messages" aria-live="polite"></pre>
+      </div>
+
+      <div class="tab-panel" id="panel-report" role="tabpanel">
+        <div class="report" id="report">
+          <p class="empty-state">Nach einem Durchlauf steht hier, welcher Wert aus welcher Quelle in welche Zelle
+            geschrieben wurde.</p>
+        </div>
+      </div>
+
+      <div class="tab-panel" id="panel-help" role="tabpanel">
+        <div class="help" id="help"></div>
+      </div>
+    </section>
+  </main>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

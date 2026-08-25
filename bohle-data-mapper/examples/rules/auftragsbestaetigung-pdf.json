@@ -1,0 +1,62 @@
+{
+  "version": 1,
+  "name": "Auftragsbestätigung (PDF) → Kalkulationsblatt",
+  "description": "Liest Kopfdaten und Positionstabelle aus einer PDF-Auftragsbestätigung und füllt die Kalkulationsvorlage.",
+  "input": { "type": "pdf" },
+  "output": { "sheet": "Kalkulation" },
+
+  "fields": [
+    {
+      "name": "auftragsnummer",
+      "description": "z. B. AB-2026-04821",
+      "source": { "type": "regex", "pattern": "Auftragsnummer:?\\s*([A-Z]{1,3}-\\d{4}-\\d{3,6})" },
+      "required": true
+    },
+    {
+      "name": "kunde",
+      "source": { "type": "label", "label": "Kunde" }
+    },
+    {
+      "name": "datum",
+      "source": { "type": "label", "label": "Datum" },
+      "transform": [{ "op": "date", "from": "auto" }]
+    },
+    {
+      "name": "baustelle",
+      "source": { "type": "label", "label": "Baustelle" }
+    },
+    {
+      "name": "netto",
+      "source": { "type": "label", "label": "Nettosumme" },
+      "transform": [{ "op": "number", "decimal": "de" }]
+    }
+  ],
+
+  "cells": [
+    { "target": "B4", "source": { "type": "field", "name": "auftragsnummer" } },
+    { "target": "B5", "source": { "type": "field", "name": "kunde" } },
+    { "target": "B6", "source": { "type": "field", "name": "datum" }, "type": "date" },
+    { "target": "B7", "source": { "type": "field", "name": "baustelle" } },
+    { "target": "B8", "source": { "type": "field", "name": "netto" }, "type": "number" }
+  ],
+
+  "tables": [
+    {
+      "name": "positionen",
+      "description": "Jede Positionszeile der PDF-Tabelle.",
+      "rows": {
+        "type": "lineRegex",
+        "pattern": "^(\\d{1,3})\\s+(.+?)\\s+([\\d.,]+)\\s+(m|m2|m²|lfm|Stk|psch)\\s+([\\d.,]+)\\s+([\\d.,]+)$"
+      },
+      "target": { "sheet": "Kalkulation", "startRow": 12, "maxRows": 20, "clearRows": 20 },
+      "columns": [
+        { "column": "A", "source": { "type": "group", "index": 1 }, "type": "number" },
+        { "column": "B", "source": { "type": "group", "index": 2 } },
+        { "column": "C", "source": { "type": "group", "index": 3 }, "transform": [{ "op": "number", "decimal": "de" }], "type": "number" },
+        { "column": "D", "source": { "type": "group", "index": 4 } },
+        { "column": "E", "source": { "type": "group", "index": 5 }, "transform": [{ "op": "number", "decimal": "de" }], "type": "number" },
+        { "column": "F", "source": { "type": "group", "index": 6 }, "transform": [{ "op": "number", "decimal": "de" }], "type": "number" }
+      ]
+    }
+  ]
+}
