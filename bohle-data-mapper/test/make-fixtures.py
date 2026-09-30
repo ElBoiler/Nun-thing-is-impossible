@@ -14,6 +14,8 @@ Two PDFs on purpose:
   auftrag-cid.pdf           objects packed into an object stream behind an xref
                             stream, Type0/Identity-H font with a /ToUnicode
                             CMap -- the modern layout most ERP exporters emit.
+  auftrag-gedreht.pdf       a page carrying /Rotate 90, which only reads in the
+                            right order if the extractor applies page rotation.
 
     python3 test/make-fixtures.py
 """
@@ -510,7 +512,10 @@ endcmap CMapName currentdict /CMap defineresource pop end end"""
         offsets[index] = len(out)
         out += f"{index} 0 obj\n".encode() + body_bytes + b"\nendobj\n"
 
-    xref_number = len(pdf.objects) + 1
+    # The xref stream needs a number of its own: the objects packed into the
+    # object stream occupy 4..8, so continuing from len(objects) would collide
+    # with the catalog and make /Root unresolvable.
+    xref_number = max(max(packed), len(pdf.objects)) + 1
     entries = [(0, 0, 65535)]
     for index in range(1, len(pdf.objects) + 1):
         entries.append((1, offsets[index], 0))
@@ -540,9 +545,34 @@ endcmap CMapName currentdict /CMap defineresource pop end end"""
     return path
 
 
+def build_rotated_pdf() -> Path:
+    """One page with /Rotate 90: only correct if the extractor applies it."""
+    pdf = PdfBuilder()
+    catalog = pdf.reserve()
+    pages = pdf.reserve()
+    helv = pdf.add(b"<</Type/Font/Subtype/Type1/BaseFont/Helvetica/Encoding/WinAnsiEncoding>>")
+
+    content = b""
+    for y, value in [(780, "Lieferschein LS-2026-00042"), (760, "Kunde: Werft Nord GmbH"),
+                     (740, "Pos 1 Rohrisolierung 40,00 m")]:
+        content += b"BT /F1 11 Tf 1 0 0 1 60 " + str(y).encode() + b" Tm (" + _pdf_escape(value) + b") Tj ET\n"
+
+    stream = pdf.add(pdf.stream(b"", content))
+    page = pdf.add(
+        b"<</Type/Page/Parent " + str(pages).encode() + b" 0 R/MediaBox[0 0 595.28 841.89]/Rotate 90"
+        b"/Resources<</Font<</F1 " + str(helv).encode() + b" 0 R>>>>/Contents " + str(stream).encode() + b" 0 R>>"
+    )
+    pdf.put(pages, b"<</Type/Pages/Kids[" + str(page).encode() + b" 0 R]/Count 1>>")
+    pdf.put(catalog, b"<</Type/Catalog/Pages " + str(pages).encode() + b" 0 R>>")
+
+    path = OUT / "auftrag-gedreht.pdf"
+    path.write_bytes(pdf.render(catalog))
+    return path
+
+
 def main() -> None:
     OUT.mkdir(parents=True, exist_ok=True)
-    produced = [build_template(), build_input_workbook(), build_order_pdf(), build_cid_pdf()]
+    produced = [build_template(), build_input_workbook(), build_order_pdf(), build_cid_pdf(), build_rotated_pdf()]
     for path in produced:
         print(f"{path.relative_to(OUT.parent.parent)}  {path.stat().st_size:,} bytes")
 

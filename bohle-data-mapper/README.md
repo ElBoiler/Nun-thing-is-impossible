@@ -6,15 +6,16 @@ Erweiterung einen fertigen Prompt mit, der die Struktur beider Dateien enthält.
 
 Alles läuft lokal im Browser: keine Server, keine Uploads, keine Host-Berechtigungen.
 
-> Dieses Projekt ist zugleich das **Gerüst für weitere Bohle-Werkzeuge**: kein Build-Schritt, keine
-> Fremdbibliotheken, austauschbares Branding an einer Stelle, Kern in Node testbar.
+> Dieses Projekt ist zugleich das **Gerüst für weitere Bohle-Werkzeuge**: kein Build-Schritt, eine einzige
+> mitgelieferte Bibliothek, austauschbares Branding an einer Stelle, Kern in Node testbar.
 > Siehe [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 ## Installation
 
-1. Repository klonen oder den Ordner `bohle-data-mapper/` herunterladen.
+1. Repository klonen (oder als ZIP herunterladen und entpacken).
 2. In Chrome `chrome://extensions` öffnen und **Entwicklermodus** einschalten.
-3. **Entpackte Erweiterung laden** klicken und den Ordner `bohle-data-mapper/` auswählen.
+3. **Entpackte Erweiterung laden** klicken und den Projektordner auswählen — den mit der
+   `manifest.json` darin.
 4. Auf das Symbol in der Symbolleiste klicken — die Anwendung öffnet sich **in einem eigenen Tab**.
 
 Es gibt bewusst kein Popup: Ein Mapping bedeutet, lange PDF-Zeilen und breite Tabellen nebeneinander zu
@@ -83,6 +84,16 @@ Druckbereiche und alle übrigen Blätter bleiben unverändert — die Erweiterun
 sondern ergänzt sie gezielt. Neue Zellen übernehmen das Format ihrer Spalte bzw. Zeile, und Excel wird nach
 dem Öffnen zur Neuberechnung aufgefordert, damit Vorlagenformeln die neuen Werte einbeziehen.
 
+## Mitgelieferte Bibliothek
+
+Die Textebene von PDFs liest **pdf.js** (Mozilla, Apache-2.0). Die Dateien liegen fertig gebaut unter
+[`vendor/pdfjs/`](vendor/pdfjs) — die Erweiterung hat keinen Build-Schritt, also wird nichts zur Laufzeit aus
+`node_modules` aufgelöst. Aktualisiert wird mit `npm run vendor:pdfjs`.
+
+Verwendet wird bewusst der *legacy*-Build: nur er läuft unverändert sowohl in der Erweiterung als auch in
+Node, sodass die Tests denselben Extraktor prüfen, den auch die Anwendung benutzt. pdf.js arbeitet in einem
+eigenen Worker — große PDFs blockieren die Oberfläche nicht.
+
 ## Datenschutz
 
 Die Erweiterung besitzt genau eine Berechtigung: `storage`, für die gespeicherten Regelsätze. Es gibt keine
@@ -91,15 +102,20 @@ Die Erweiterung besitzt genau eine Berechtigung: `storage`, für die gespeichert
 ## Entwicklung
 
 ```bash
-npm test          # Kern-Tests, ohne Abhängigkeiten  (test/run.mjs)
+npm test          # Kern-Tests, ohne Installation    (test/run.mjs)
 npm run test:e2e  # lädt die Erweiterung in Chromium (test/e2e.mjs, braucht playwright-core)
 npm run fixtures  # Testdateien neu erzeugen         (test/make-fixtures.py)
 npm run icons     # Icons neu erzeugen               (assets/make-icons.py)
 ```
 
 `npm test` deckt ZIP, XLSX lesen/schreiben, PDF-Textextraktion, Regelprüfung, Formeln und zwei komplette
-Durchläufe ab. `npm run test:e2e` fährt die echte Erweiterung in Chromium hoch, legt Dateien ab, führt ein
-Mapping aus und prüft die heruntergeladene Arbeitsmappe.
+Durchläufe ab und braucht **keine** Installation — pdf.js liegt fertig in `vendor/`. `npm run test:e2e` fährt
+die echte Erweiterung in Chromium hoch, legt Dateien ab, führt ein Mapping aus und prüft die
+heruntergeladene Arbeitsmappe.
+
+```bash
+npm run vendor:pdfjs   # pdf.js in vendor/ aktualisieren (nach npm i -D pdfjs-dist@…)
+```
 
 Die Testdateien in `test/fixtures/` stammen bewusst **nicht** aus dem eigenen Code, sondern werden von
 `test/make-fixtures.py` aus rohem XLSX- bzw. PDF-Syntax erzeugt — so werden Leser und Writer gegen fremd

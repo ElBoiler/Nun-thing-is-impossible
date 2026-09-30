@@ -16,7 +16,7 @@ import { columnToNumber, numberToColumn, parseRange, parseRef } from '../src/cor
 import { evaluateExpression } from '../src/core/expr.js';
 import { loadSourceDocument } from '../src/core/document.js';
 import { readXlsx, serialToDate, dateToSerial } from '../src/core/xlsx-read.js';
-import { readPdf } from '../src/core/pdf-text.js';
+import { assembleLines, readPdf } from '../src/core/pdf-text.js';
 import { readZip, writeZip } from '../src/core/zip.js';
 import { runMapping, suggestFileName } from '../src/core/engine.js';
 import { parseRules } from '../src/core/rules.js';
@@ -230,7 +230,7 @@ console.log('\npdf text extraction');
 {
   const pdf = await readPdf(fixture('auftragsbestaetigung.pdf'));
   equal('page count', pdf.pageCount, 2);
-  check('umlauts decode through WinAnsi', pdf.text.includes('Auftragsbestätigung'), pdf.text.slice(0, 200));
+  check('winansi umlauts decode', pdf.text.includes('Auftragsbestätigung'), pdf.text.slice(0, 200));
   check('eszett decodes', pdf.text.includes('Werftstraße 12'));
   check('kerned TJ runs join up', pdf.lines.some((line) => /Auftragsnummer:\s*AB-2026-04821/.test(line.text)),
     JSON.stringify(pdf.lines.slice(0, 6).map((l) => l.text)));
@@ -238,16 +238,38 @@ console.log('\npdf text extraction');
     JSON.stringify(pdf.lines.filter((l) => l.text.startsWith('1 ')).map((l) => l.text)));
   check('lines are ordered top to bottom', pdf.pages[0].lines[0].text.includes('Bohle Isoliertechnik'));
   check('page 2 content is present', pdf.pages[1].text.includes('Montage Kleinteile'));
-  check('form xobjects are executed', pdf.text.includes('24143 Kiel'));
+  check('text inside form xobjects is found', pdf.text.includes('24143 Kiel'));
   equal('lines carry their page number', pdf.pages[1].lines[0].page, 2);
 
   const cid = await readPdf(fixture('auftrag-cid.pdf'));
-  equal('object streams are expanded (page found)', cid.pageCount, 1);
+  equal('objects in an object stream are found', cid.pageCount, 1);
   check('identity-h text decodes through ToUnicode', cid.text.includes('Lieferschein LS-2026-00917'), cid.text.slice(0, 200));
   check('cid columns stay apart', /Position 1 Rohrisolierung 40,00 m/.test(cid.text), cid.text);
 
+  // Line assembly is the part this project owns; pdf.js only supplies the
+  // positioned fragments.
+  const item = (text, x, y, width, height = 10) => ({ text, x, y, width, height });
+  const assembled = assembleLines([
+    item('18,40', 410, 100, 24),
+    item('Pos', 60, 100, 18),
+    item('Rohrisolierung', 95, 100, 62),
+    item('DN 100', 161, 100, 30),
+    item('Summe', 60, 130, 30),
+  ]);
+  equal('fragments group into lines by baseline', assembled.length, 2);
+  equal('reading order is left to right', assembled[0].text, 'Pos Rohrisolierung DN 100 18,40');
+  equal('lines are ordered top to bottom on the page', assembled[1].text, 'Summe');
+  equal('a gap narrower than a space does not become one',
+    assembleLines([item('12', 60, 10, 8), item(',50', 68, 10, 12)])[0].text, '12,50');
+
+  const rotated = await readPdf(fixture('auftrag-gedreht.pdf'));
+  check('a /Rotate 90 page still reads in order',
+    /Lieferschein LS-2026-00042/.test(rotated.pages[0].lines[0].text), JSON.stringify(rotated.pages[0].lines.map((l) => l.text)));
+  check('rotation swaps the reported page size', rotated.pages[0].width > rotated.pages[0].height,
+    `${rotated.pages[0].width} x ${rotated.pages[0].height}`);
+
   const notPdf = await readPdf(fixture('vorlage-kalkulation.xlsx')).then(() => null, (error) => error.message);
-  check('non-PDF input fails clearly', /%PDF/.test(notPdf || ''), notPdf || 'no error');
+  check('non-PDF input fails clearly', /not a readable PDF/i.test(notPdf || ''), notPdf || 'no error');
 }
 
 /* ---------------------------------------------------------------- document */

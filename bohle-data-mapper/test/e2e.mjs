@@ -76,6 +76,8 @@ try {
     if (message.type() === 'error') errors.push(message.text());
   });
   page.on('pageerror', (error) => errors.push(String(error)));
+  const workerUrls = [];
+  page.on('worker', (worker) => workerUrls.push(worker.url()));
 
   await page.goto(`chrome-extension://${extensionId}/src/app/app.html`);
   check('app page loads', (await page.title()) === 'Bohle Datenmapper');
@@ -87,6 +89,12 @@ try {
   const inputSummary = await page.locator('#input-summary').innerText();
   check('pdf is parsed inside the page', /text lines/i.test(inputSummary), inputSummary);
   check('preview shows extracted lines', (await page.locator('.line-list').innerText()).includes('AB-2026-04821'));
+
+  // pdf.js falls back to the main thread when its worker cannot be loaded —
+  // which would still pass every check above while freezing the tab on a big
+  // document. Assert the worker really started under the MV3 CSP.
+  check('pdf.js runs in its own worker', workerUrls.some((url) => url.endsWith('/vendor/pdfjs/pdf.worker.mjs')),
+    workerUrls.join(', ') || 'no workers started');
 
   const allLines = await page.locator('.line-list tr').count();
   await page.fill('#preview-search', 'Nettosumme');

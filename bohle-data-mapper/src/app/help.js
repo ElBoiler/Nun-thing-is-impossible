@@ -77,6 +77,7 @@ export function renderHelp(container) {
     <h3>Datenschutz</h3>
     <p>Die Erweiterung hat keine Host-Berechtigungen und sendet nichts ins Netz. Dateien werden im
       Browser-Tab gelesen und geschrieben; gespeichert werden ausschließlich die Regelsätze, die Sie selbst
-      unter einem Namen sichern.</p>
+      unter einem Namen sichern. Die Textebene von PDFs liest die mitgelieferte Bibliothek
+      <code>pdf.js</code> — ebenfalls lokal, in einem eigenen Worker.</p>
   `;
 }
