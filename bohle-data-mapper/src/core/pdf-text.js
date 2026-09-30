@@ -17,6 +17,9 @@
  * Both fail with an explicit message rather than silently producing nothing.
  */
 
+// Must precede the pdf.js import: it defines the browser globals pdf.js
+// touches at load time, which Node does not have.
+import './pdfjs-node-shim.js';
 import * as pdfjs from '../../vendor/pdfjs/pdf.mjs';
 import { toBytes } from './bytes.js';
 

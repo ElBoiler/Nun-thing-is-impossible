@@ -29,6 +29,7 @@ src/core/                  … kennt weder DOM noch chrome.* — in Node testbar
   xlsx-read.js             Arbeitsmappe lesen (Shared Strings, Formate, Datumswerte)
   xlsx-write.js            Werte in eine Vorlage schreiben, Rest unverändert lassen
   pdf-text.js              pdf.js ansteuern und Textfragmente zu Zeilen zusammensetzen
+  pdfjs-node-shim.js       Browser-Globals, die pdf.js beim Laden braucht (nur Node)
   document.js              Vereinheitlichtes Eingabemodell (PDF und XLSX)
   values.js                Quellen und Transformationen
   expr.js                  Kleine, sichere Formelsprache
@@ -79,6 +80,10 @@ der Prompt für Claude. Was dort fehlt, wird Claude nie in eine Regeldatei schre
 * **Verschlüsselte PDFs** werden abgelehnt statt halb geraten.
 * **`.xls`** (das alte Binärformat) wird nicht gelesen — vorher als `.xlsx` speichern.
 * **ZIP64** wird nicht unterstützt; für Office-Dateien praktisch irrelevant.
+* pdf.js greift beim Laden auf Browser-Globals zu (`DOMMatrix`, `Path2D`). In Node fehlen sie; pdf.js würde
+  dafür das optionale native Paket `@napi-rs/canvas` nachladen — rund 40 MB, nur damit die Tests laufen.
+  Stattdessen definiert `pdfjs-node-shim.js` das Nötige selbst (im Browser rührt es nichts an). Eine
+  Warnung „Cannot load @napi-rs/canvas“ beim ersten Import in Node ist zu erwarten und harmlos.
 * Aus pdf.js sind bewusst **nicht** mitgeliefert: `standard_fonts/`, `cmaps/` und `wasm/`. Sie werden zum
   *Zeichnen* von Glyphen, für vordefinierte CJK-Kodierungen und zum Dekodieren von Bildern gebraucht — hier
   wird nur die Textebene gelesen. Die Extraktion wurde mit und ohne Standardschriften auf identisches
