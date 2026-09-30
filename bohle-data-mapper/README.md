@@ -12,9 +12,10 @@ Alles läuft lokal im Browser: keine Server, keine Uploads, keine Host-Berechtig
 
 ## Installation
 
-1. Repository klonen oder den Ordner `bohle-data-mapper/` herunterladen.
+1. Repository klonen (oder als ZIP herunterladen und entpacken).
 2. In Chrome `chrome://extensions` öffnen und **Entwicklermodus** einschalten.
-3. **Entpackte Erweiterung laden** klicken und den Ordner `bohle-data-mapper/` auswählen.
+3. **Entpackte Erweiterung laden** klicken und den Projektordner auswählen — den mit der
+   `manifest.json` darin.
 4. Auf das Symbol in der Symbolleiste klicken — die Anwendung öffnet sich **in einem eigenen Tab**.
 
 Es gibt bewusst kein Popup: Ein Mapping bedeutet, lange PDF-Zeilen und breite Tabellen nebeneinander zu
